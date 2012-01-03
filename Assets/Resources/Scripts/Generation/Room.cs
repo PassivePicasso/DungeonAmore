@@ -1,16 +1,24 @@
-using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class Room<T> : MonoBehaviour where T : Room<T>
+public abstract class Room : MonoBehaviour
 {
+	public enum Orientation
+	{
+		North,
+		East,
+		South,
+		West
+	};
 	public int renderCount = 10;
+	public Tile parent;
 	private List<Tile> cells = new List<Tile> ();
 	private List<Tile> exits = new List<Tile> ();
 	private Dictionary<Tile, GameObject> tileMap = new Dictionary<Tile, GameObject> ();
-	private Tile parent;
 	private readonly static Queue<Tile> renderQueue = new Queue<Tile> ();
+	private static int existingRooms = 0;
+	public static readonly int MAXIMUM_ROOMS = 100;
 
 	protected void Clear ()
 	{
@@ -37,23 +45,29 @@ public abstract class Room<T> : MonoBehaviour where T : Room<T>
 		if (!cells.Contains (tile)) {
 			Add (tile);
 		}
-		exits.Add (tile);
+		exits.Add (cells [cells.IndexOf (tile)]);
 	}
 	
-	public X AddRoom<X> () where X : Room<X>
+	public X AddRoom<X> () where X : Room
 	{
-		Debug.Log (exits.Count);
-		var exit = exits [UnityEngine.Random.Range (0, exits.Count)];
-		if (tileMap.ContainsKey (exit)) {
-			Debug.Log("Found Object");
-			var room = tileMap [exit].AddComponent<X> ();
-			return room;
+		if (existingRooms < Room.MAXIMUM_ROOMS) {
+			var exit = exits [UnityEngine.Random.Range (0, exits.Count)];
+			exits.Remove (exit);
+			if (tileMap.ContainsKey (exit)) {
+				var room = tileMap [exit].AddComponent<X> ();
+				return room;
+			}
 		}
 		return null;
 	}
 	
 	public List<Tile> Exits {
 		get { return exits; }
+	}
+
+	public bool IsRendered ()
+	{
+		return renderQueue.Count == 0;
 	}
 	
 	void Update ()
@@ -66,7 +80,7 @@ public abstract class Room<T> : MonoBehaviour where T : Room<T>
 			if (renderTarget.type == Tile.TileType.Floor) {
 				var tile = GameObject.CreatePrimitive (PrimitiveType.Cube);
 				tile.transform.parent = this.transform;
-				tile.transform.localPosition = new Vector3 (renderTarget.x, -1, renderTarget.y);
+				tile.transform.position = new Vector3 (renderTarget.x, 0, renderTarget.y);
 				tileMap.Add (renderTarget, tile);
 			}
 		}

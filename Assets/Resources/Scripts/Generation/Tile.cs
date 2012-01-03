@@ -9,9 +9,11 @@ public class Tile
 		StairUp,
 		StairDown
 	}
+	
 	public int x, y;
 	public TileType type;
-		
+	public Room.Orientation orientation;
+
 	public Tile (int x, int y, TileType type)
 	{
 		this.x = x;
